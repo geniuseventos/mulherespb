@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observatório PB - Violência Contra a Mulher</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+    <header class="main-header" style="background-color: #4A148C;">
+        <div class="logo">Observatório PB</div>
+        
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="nav-container" id="nav-container">
+            <nav class="nav-links">
+                <a href="#introducao">O Projeto</a>
+                <a href="#mapa">Mapa Interativo</a>
+                <a href="#evolucao">A Escalada</a>
+                <a href="#perfil">Raio-X</a>
+                <a href="#sazonalidade">Relógio</a>
+                <a href="#apoio">Rede de Apoio</a>
+            </nav>
+            <button class="btn-denuncie" onclick="window.open('tel:180')">DENUNCIE</button>
+        </div>
+    </header>
+
+    <section class="hero-section" style="background-color: #4A148C;">
+        <div class="hero-grid">
+            <div class="hero-text-side">
+                <h1 class="hero-title-main" style="color: #ffffff;">Paraíba: 8.907 vidas que pedem por proteção.</h1>
+                <p class="hero-subtext" style="color: #e0e0e0;">A análise dos dados oficiais de 2020 a 2026 revela os locais e períodos de maior vulnerabilidade feminina. Entender os números é o primeiro passo para políticas públicas eficientes.</p>
+                
+                <div class="hero-badges">
+                    <span>🛡️ Base SINESP</span>
+                    <span>📍 223 Municípios</span>
+                </div>
+
+                <div class="hero-action">
+                    <a href="#mapa" class="btn-cta-map">EXPLORAR MAPA</a>
+                </div>
+            </div>
+
+            <div class="hero-image-side">
+                <img src="image_f373f2.png" alt="Análise de dados" class="hero-responsive-img">
+            </div>
+        </div>
+    </section>
+
+    <section class="secao-introducao" id="introducao" style="background-color: #ffffff; padding: 70px 20px; color: #333333;">
+        <div style="max-width: 900px; margin: 0 auto; text-align: center;">
+            <h2 style="font-size: 2.5rem; color: #4A148C; margin-bottom: 20px;">Observando para Proteger</h2>
+            <p style="font-size: 1.15rem; line-height: 1.6; margin-bottom: 0;">
+                A violência contra a mulher na Paraíba é um problema estrutural que avança silenciosamente por diferentes regiões do estado, alcançando inclusive municípios do interior. Diante desse cenário, o Observatório PB, iniciativa do programa Limite do Visível, surge com o propósito de transformar dados em conscientização e ação.
+                Por meio de uma plataforma acessível e interativa, traduzimos informações complexas em análises visuais claras e compreensíveis, permitindo identificar padrões, regiões críticas e a evolução dos casos ao longo do tempo. Mais do que apresentar números, o observatório busca dar visibilidade a uma realidade frequentemente silenciada.
+                Nosso objetivo é fortalecer a rede de proteção às mulheres, apoiar a formulação de políticas públicas e ampliar o acesso da sociedade a informações estratégicas sobre a violência de gênero na Paraíba.
+            </p>
+        </div>
+    </section>
+
+    <section class="secao-dados" id="mapa" style="background-color: #E91E63; padding: 60px 20px; color: #ffffff;">
+        <div class="cabecalho-dados" style="max-width: 1200px; margin: 0 auto;">
+            <h2 style="color: #ffffff; text-align: center; margin-bottom: 20px;">Mapa da Violência Feminina na Paraíba</h2>
+            <div style="text-align: center;">
+                <select id="filtro-ano" class="seletor-ano" style="color: #ffffff; border-color: #ffffff; background-color: transparent;">
+                    <option value="todos" style="background-color: #E91E63; color: #ffffff;">Todos os Anos (2020-2026)</option>
+                    <option value="2026" style="background-color: #E91E63;">2026</option>
+                    <option value="2025" style="background-color: #E91E63;">2025</option>
+                    <option value="2024" style="background-color: #E91E63;">2024</option>
+                    <option value="2023" style="background-color: #E91E63;">2023</option>
+                    <option value="2022" style="background-color: #E91E63;">2022</option>
+                    <option value="2021" style="background-color: #E91E63;">2021</option>
+                    <option value="2020" style="background-color: #E91E63;">2020</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-dados" style="max-width: 1200px; margin: 30px auto 0;">
+            <div class="mapa-container" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">
+                <div id="mapa-interativo"></div>
+            </div>
+            
+            <aside class="ranking-container" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">
+                <h3 class="ranking-titulo" style="color: #ffffff;">Top 5 Municípios</h3>
+                <div id="ranking-lista" class="ranking-lista">
+                    </div>
+            </aside>
+        </div>
+    </section>
+
+    <section class="secao-linha-tempo" id="evolucao" style="background-color: #4A148C; padding: 60px 20px; color: #ffffff;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <h2 style="text-align: center; margin-bottom: 10px; font-size: 2.2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); color: #ffffff;">Linha do Tempo da Violência Feminina (2020–2026)</h2>
+            <p style="text-align: center; margin-bottom: 40px; font-weight: 500; font-size: 1.1rem; opacity: 0.9; color: #ffffff;">O histórico de registros revela o aumento constante e a necessidade urgente de políticas de proteção.</p>
+            
+            <div id="grafico-linha" style="width: 100%; height: 400px;"></div>
+        </div>
+    </section>
+
+    <section class="secao-perfil-vitimas" id="perfil" style="background-color: #ffffff; padding: 70px 20px; color: #333333;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            
+            <div style="text-align: center; margin-bottom: 50px;">
+                <h2 style="font-size: 2.5rem; color: #4A148C; margin-bottom: 10px;">Perfil das Ocorrências e das Vítimas</h2>
+                <p style="font-size: 1.1rem; color: #555555; font-weight: 500; max-width: 800px; margin: 0 auto;">
+                    Análise da natureza das ocorrências e do perfil etário das vítimas no estado.
+                </p>
+            </div>
+
+            <div class="grid-graficos">
+                <div class="cartao-grafico" style="background-color: #E91E63;">
+                    <h3 style="color: #ffffff;">Natureza da Ocorrência</h3>
+                    <p style="color: #ffffff;">Ranking dos tipos de crimes registados.</p>
+                    <div id="grafico-tipos-crime" style="width: 100%; height: 350px;"></div>
+                </div>
+
+                <div class="cartao-grafico" style="background-color: #E91E63;">
+                    <h3 style="color: #ffffff;">Perfil Etário das Vítimas</h3>
+                    <p style="color: #ffffff;">Distribuição das vítimas por faixa etária.</p>
+                    <div id="grafico-faixa-etaria" style="width: 100%; height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="secao-sazonalidade" id="sazonalidade" style="background-color: #4A148C; padding: 70px 20px; color: #ffffff;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 50px;">
+                <h2 style="font-size: 2.5rem; color: #E91E63; margin-bottom: 10px;">O Relógio da Violência</h2>
+                <p style="font-size: 1.1rem; color: #e0e0e0; font-weight: 500; max-width: 800px; margin: 0 auto;">
+                    Os dados revelam que a violência não é linear o ano todo, apresentando padrões e picos em momentos específicos que exigem vigilância estratégica.
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🗓️</div>
+                    <h3 style="color: #FF7EB3; font-size: 1.5rem; margin-bottom: 10px;">Mês Crítico</h3>
+                    <p style="color: #ffffff; font-size: 1rem; line-height: 1.5;">O mês com maior incidência de casos é Março[cite: 89].</p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🎭</div>
+                    <h3 style="color: #FF7EB3; font-size: 1.5rem; margin-bottom: 10px;">Períodos Festivos</h3>
+                    <p style="color: #ffffff; font-size: 1rem; line-height: 1.5;">Os dados revelam picos repetitivos de notificações em períodos festivos específicos no estado (como as semanas pós-Carnaval, festas de São João no interior e festas de fim de ano)[cite: 94].</p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+                    <h3 style="color: #FF7EB3; font-size: 1.5rem; margin-bottom: 10px;">Alerta Contínuo</h3>
+                    <p style="color: #ffffff; font-size: 1rem; line-height: 1.5;">Não há registro de quedas estruturais abruptas nos últimos 6 anos[cite: 96]. O volume absoluto de novas vítimas mantém uma média contínua mês a mês, provando que a violência é um fenômeno estrutural e diário, imune a variações sazonais comuns de outras dinâmicas criminais[cite: 96].</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="secao-rede-apoio" id="apoio" style="background-color: #E91E63; padding: 70px 20px; color: #ffffff;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            
+            <div style="text-align: center; margin-bottom: 50px;">
+                <h2 style="font-size: 2.5rem; color: #ffffff; margin-bottom: 10px;">Rede de Apoio e Proteção</h2>
+                <p style="font-size: 1.1rem; color: #ffffff; font-weight: 500;">Canais de ajuda, infraestrutura de acolhimento e projetos ativos na Paraíba.</p>
+            </div>
+
+            <div class="grid-canais-apoio">
+                <div class="canal-card" style="background: #ffffff; border-radius: 15px; padding: 25px;">
+                    <div class="canal-badge" style="background: #4A148C; color: #ffffff; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; display: inline-block; margin-bottom: 10px;">EMERGÊNCIA</div>
+                    <h3 style="color: #4A148C; margin-bottom: 10px;">Polícia Militar (190)</h3>
+                    <p style="color: #333333; margin-bottom: 20px;">Para situações de flagrante, ameaça imediata ou socorro de urgência.</p>
+                    <button class="btn-ligar" onclick="window.open('tel:190')" style="background: #4A148C; color: #ffffff; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer;">LIGAR 190</button>
+                </div>
+                <div class="canal-card" style="background: #ffffff; border-radius: 15px; padding: 25px;">
+                    <div class="canal-badge" style="background: #4A148C; color: #ffffff; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; display: inline-block; margin-bottom: 10px;">ORIENTAÇÃO</div>
+                    <h3 style="color: #4A148C; margin-bottom: 10px;">Central da Mulher (180)</h3>
+                    <p style="color: #333333; margin-bottom: 20px;">Atendimento nacional anônimo para denúncias, suporte e apoio psicológico.</p>
+                    <button class="btn-ligar" onclick="window.open('tel:180')" style="background: #4A148C; color: #ffffff; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer;">LIGAR 180</button>
+                </div>
+                <div class="canal-card" style="background: #ffffff; border-radius: 15px; padding: 25px;">
+                    <div class="canal-badge" style="background: #4A148C; color: #ffffff; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; display: inline-block; margin-bottom: 10px;">ACOMPANHAMENTO</div>
+                    <h3 style="color: #4A148C; margin-bottom: 10px;">Patrulha Maria da Penha</h3>
+                    <p style="color: #333333; margin-bottom: 20px;">Programa estatal focado no monitoramento e cumprimento de Medidas Protetivas.</p>
+                    <button class="btn-ligar" style="background: #4A148C; color: #ffffff; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer;" onclick="window.open('https://paraiba.pb.gov.br/')">VER PROGRAMA</button>
+                </div>
+            </div>
+
+            <div class="mapa-pontos-ajuda" style="margin: 50px 0; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; border: 1px solid rgba(255,255,255,0.2);">
+                <h3 style="margin-bottom: 10px; color: #ffffff; font-size: 1.5rem; border-left: 5px solid #ffffff; padding-left: 10px;">Pontos de Atendimento Físico na PB</h3>
+                <p style="color: #ffffff; margin-bottom: 25px; font-size: 0.95rem;">Clique em qualquer ícone no mapa para visualizar os detalhes (Endereço, Contato e Horários).</p>
+                
+                <div class="visualizador-mapa-apoio" id="container-mapa-apoio" style="width: 100%; height: 500px; border-radius: 12px; position: relative; border: 2px solid rgba(255,255,255,0.5); overflow: hidden;">
+                    </div>
+            </div>
+
+            <h3 style="margin-bottom: 25px; color: #ffffff; font-size: 1.5rem; border-left: 5px solid #ffffff; padding-left: 10px;">Campanhas de Conscientização</h3>
+            
+            <div class="grid-noticias-campanhas">
+                <div class="noticia-card" onclick="abrirNoticia('noticia-1')" style="background: #ffffff; border-radius: 12px; overflow: hidden; cursor: pointer;">
+                    <div class="noticia-img-placeholder" style="background: #4A148C; color: #ffffff; padding: 30px; text-align: center; font-weight: bold;">📢 CAMPANHA ESTADUAL</div>
+                    <div class="noticia-corpo" style="padding: 20px;">
+                        <h4 style="color: #4A148C; margin-bottom: 10px;">Sinal Vermelho Contra a Violência</h4>
+                        <p style="color: #333333; margin-bottom: 15px;">Um simples 'X' desenhado na palma da mão serve como pedido silencioso de socorro.</p>
+                        <span class="btn-ler-mais" style="color: #E91E63; font-weight: bold;">Clique para expandir ➔</span>
+                    </div>
+                </div>
+                <div class="noticia-card" onclick="abrirNoticia('noticia-2')" style="background: #ffffff; border-radius: 12px; overflow: hidden; cursor: pointer;">
+                    <div class="noticia-img-placeholder" style="background: #4A148C; color: #ffffff; padding: 30px; text-align: center; font-weight: bold;">🎭 SÃO JOÃO SEGURO</div>
+                    <div class="noticia-corpo" style="padding: 20px;">
+                        <h4 style="color: #4A148C; margin-bottom: 10px;">Meu Corpo Não É Carnaval / São João</h4>
+                        <p style="color: #333333; margin-bottom: 15px;">Iniciativa focada em grandes eventos festivos na Paraíba contra a importunação sexual.</p>
+                        <span class="btn-ler-mais" style="color: #E91E63; font-weight: bold;">Clique para expandir ➔</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <div class="noticia-modal" id="noticia-modal">
+        <div class="modal-conteudo">
+            <span class="modal-fechar" onclick="fecharNoticia()">&times;</span>
+            <div id="modal-dinamico-corpo"></div>
+        </div>
+    </div>
+
+    <div class="noticia-modal" id="ponto-modal">
+        <div class="modal-conteudo">
+            <span class="modal-fechar" onclick="fecharPonto()">&times;</span>
+            <div id="modal-ponto-corpo"></div>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 40px 20px; background: #0a0216; color: #ffffff; font-size: 0.9rem;">
+        <p>Projeto Observatório PB - Democratizando dados para fortalecer a rede de proteção feminina.</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

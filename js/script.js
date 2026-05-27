@@ -22,10 +22,15 @@ function converterExcelParaAno(numeroExcel) {
 
 async function iniciarDashboard() {
     try {
+        // ATENÇÃO: Os arquivos JSON devem ficar na raiz do projeto (junto com o index.html)
         const [respostaDados, respostaMapa] = await Promise.all([
             fetch('dados_dashboard.json'),
             fetch('geojs-25-mun.json')
         ]);
+        
+        // Trava de segurança para avisar se o arquivo não for encontrado (Erro 404)
+        if (!respostaDados.ok) throw new Error("Arquivo 'dados_dashboard.json' não encontrado.");
+        if (!respostaMapa.ok) throw new Error("Arquivo 'geojs-25-mun.json' não encontrado.");
         
         dadosGlobais = await respostaDados.json();
         geojsonGlobais = await respostaMapa.json();
@@ -36,12 +41,15 @@ async function iniciarDashboard() {
         renderizarFaixaEtaria();
         renderizarMapaApoio();
 
-        document.getElementById('filtro-ano').addEventListener('change', (e) => {
-            atualizarPainel(e.target.value);
-        });
+        const filtroAno = document.getElementById('filtro-ano');
+        if(filtroAno) {
+            filtroAno.addEventListener('change', (e) => {
+                atualizarPainel(e.target.value);
+            });
+        }
 
         window.addEventListener('resize', () => {
-            const anoSelecionado = document.getElementById('filtro-ano').value;
+            const anoSelecionado = document.getElementById('filtro-ano') ? document.getElementById('filtro-ano').value : 'todos';
             atualizarPainel(anoSelecionado);
             renderizarLinhaTempo();
             renderizarTiposCrime();
@@ -58,7 +66,7 @@ async function iniciarDashboard() {
         }
 
     } catch (erro) {
-        console.error("Erro crítico no script:", erro);
+        console.error("Erro crítico no carregamento dos dados:", erro);
     }
 }
 
@@ -90,6 +98,8 @@ function atualizarPainel(anoSelecionado) {
 
 function renderizarRanking(contagemCidades) {
     const container = document.getElementById('ranking-lista');
+    if (!container) return;
+    
     const rankingSorted = Object.entries(contagemCidades)
         .map(([nome, total]) => ({ nome, total }))
         .sort((a, b) => b.total - a.total)
@@ -134,6 +144,7 @@ function renderizarRanking(contagemCidades) {
 
 function pintarMapaD3(contagemCidades) {
     const divMapa = document.getElementById('mapa-interativo');
+    if (!divMapa) return;
     divMapa.innerHTML = ''; 
     
     const width = divMapa.parentElement.clientWidth || 800;
@@ -261,6 +272,7 @@ function renderizarLinhaTempo() {
     const dadosGrafico = anos.map(ano => ({ ano: ano, total: casosPorAno[ano] }));
 
     const container = document.getElementById('grafico-linha');
+    if (!container) return;
     container.innerHTML = ''; 
 
     const widthFull = container.clientWidth;
@@ -301,6 +313,7 @@ function renderizarTiposCrime() {
     dadosCrimes.sort((a, b) => a.total - b.total);
 
     const container = document.getElementById('grafico-tipos-crime');
+    if (!container) return;
     container.innerHTML = ''; 
 
     const margin = {top: 20, right: 40, bottom: 30, left: 140};
@@ -339,6 +352,7 @@ function renderizarFaixaEtaria() {
     const dadosIdade = [{ idade: "0-17 anos", total: 850 }, { idade: "18-29 anos", total: 3800 }, { idade: "30-45 anos", total: 2900 }, { idade: "46-59 anos", total: 950 }, { idade: "60+ anos", total: 407 }];
 
     const container = document.getElementById('grafico-faixa-etaria');
+    if (!container) return;
     container.innerHTML = ''; 
 
     const margin = {top: 20, right: 20, bottom: 40, left: 50};
@@ -379,12 +393,6 @@ function renderizarFaixaEtaria() {
     svg.selectAll("textosValores").data(dadosIdade).enter().append("text").text(d => d.total).attr("x", d => x(d.idade) + (x.bandwidth() / 2)).attr("y", d => y(d.total) - 8).attr("text-anchor", "middle").style("fill", "#ffffff").style("font-size", "12px").style("font-weight", "bold").style("opacity", 0).transition().delay(800).duration(500).style("opacity", 1);
 }
 
-// =========================================================
-// MAPA DA REDE DE APOIO (Apenas Mapa, 100% Largura e Click Info)
-// =========================================================
-// =========================================================
-// MAPA DA REDE DE APOIO (Tons de Rosa + Zoom Interativo)
-// =========================================================
 function renderizarMapaApoio() {
     const container = document.getElementById('container-mapa-apoio');
     if (!container || !geojsonGlobais) return;
@@ -394,7 +402,6 @@ function renderizarMapaApoio() {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    // Fundo do container em rosinha muito claro
     const svg = d3.select("#container-mapa-apoio")
         .append("svg")
         .attr("width", "100%")
@@ -402,83 +409,64 @@ function renderizarMapaApoio() {
         .attr("viewBox", `0 0 ${width} ${height}`)
         .style("background-color", "#3c1171"); 
 
-    // Grupo g que vai conter o mapa e os ícones (necessário para o Zoom funcionar em tudo)
     const g = svg.append("g");
 
     const projection = d3.geoMercator().fitSize([width, height], geojsonGlobais);
     const pathGenerator = d3.geoPath().projection(projection);
 
-    // Desenha o mapa da Paraíba em Rosa
     g.selectAll("path")
         .data(geojsonGlobais.features)
         .enter()
         .append("path")
         .attr("d", pathGenerator)
-        .attr("fill", "#f082a8") // Rosa base da Paraíba
-        .attr("stroke", "rgb(231, 161, 189)") // Fronteiras brancas
+        .attr("fill", "#f082a8") 
+        .attr("stroke", "rgb(231, 161, 189)") 
         .attr("stroke-width", 1.5);
 
-    //// BASE DE DADOS COMPLETA E UNIFICADA - PONTOS DE APOIO PARAÍBA
-const pontosApoio = [
-    // ==========================================
-    // --- POLO JOÃO PESSOA E METROPOLITANA ---
-    // ==========================================
-    { nome: "DEAM - João Pessoa (Centro)", tipo: "Delegacia Especializada", endereco: "Av. Dom Pedro II, 853", contato: "197", funcionamento: "24 horas", lat: -7.1150, lng: -34.8631, icone: "🚨" },
-    { nome: "DEAM - João Pessoa (Sul)", tipo: "Delegacia Especializada", endereco: "Rua Valdemar Galdino", contato: "197", funcionamento: "24 horas", lat: -7.2500, lng: -34.8631, icone: "🚨" },
-    { nome: "CRM Ednalva Bezerra (JP)", tipo: "Acolhimento Psicológico", endereco: "Rua Afonso Campos, 111", contato: "0800 283 3883", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.1150, lng: -35.0000, icone: "🤝" },
-    { nome: "NUDEM - Defensoria (JP)", tipo: "Apoio Jurídico Especializado", endereco: "Parque Solon de Lucena", contato: "(83) 99992-6286", funcionamento: "Seg-Sex, 08h às 14h", lat: -6.9800, lng: -34.8631, icone: "⚖️" },
-    { nome: "Promotoria da Mulher (JP)", tipo: "Apoio Jurídico Especializado", endereco: "Rua 13 de Maio, 691", contato: "(83) 2107-6000", funcionamento: "Seg-Sex, 08h às 14h", lat: -7.1800, lng: -34.9500, icone: "⚖️" },
-    { nome: "Juizado da Mulher (JP)", tipo: "Justiça / Medidas Protetivas", endereco: "Fórum Criminal - Parque Solon de Lucena", contato: "(83) 3214-3997", funcionamento: "Seg-Sex, 12h às 18h", lat: -7.1200, lng: -34.8750, icone: "⚖️" },
-    { nome: "Maternidade Frei Damião (JP)", tipo: "Saúde / Referência", endereco: "Av. Alberto de Brito s/n", contato: "(83) 3215-6020", funcionamento: "Emergência 24h", lat: -7.0500, lng: -34.9500, icone: "🏥" },
-    { nome: "Hospital de Trauma (JP)", tipo: "Saúde / Referência", endereco: "Av. Ouseley, s/n - Pascoal Alaggio", contato: "(83) 3216-5700", funcionamento: "Emergência 24h", lat: -7.1400, lng: -34.8400, icone: "🏥" },
-    { nome: "DEAM - Santa Rita", tipo: "Delegacia Especializada", endereco: "Loteamento Jardim Mauritânia", contato: "197", funcionamento: "Seg-Sex", lat: -7.2200, lng: -34.9780, icone: "🚨" }, 
-    { nome: "CRAM – Santa Rita", tipo: "Acolhimento Psicológico", endereco: "Rua Juarez Távora, s/n - Centro", contato: "(83) 3229-3755", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.1500, lng: -34.9900, icone: "🤝" },
-    { nome: "DEAM - Bayeux", tipo: "Delegacia Especializada", endereco: "Av. Liberdade, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -7.0500, lng: -35.0800, icone: "🚨" }, 
-    { nome: "CRM Maria do Bom Parto (Bayeux)", tipo: "Acolhimento Psicológico", endereco: "Av. Liberdade, 3340", contato: "(83) 3237-4322", funcionamento: "Seg-Sex, 08h às 14h", lat: -7.1000, lng: -34.9300, icone: "🤝" },
-    { nome: "DEAM - Cabedelo", tipo: "Delegacia Especializada", endereco: "BR-230, Km 01", contato: "197", funcionamento: "Seg-Sex", lat: -6.8500, lng: -34.8330, icone: "🚨" },
-    { nome: "CRAM Maria de Fátima (Cabedelo)", tipo: "Acolhimento Psicológico", endereco: "Rua Solon de Lucena, s/n", contato: "(83) 3250-3164", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.9400, lng: -34.8400, icone: "🤝" },
+    const pontosApoio = [
+        { nome: "DEAM - João Pessoa (Centro)", tipo: "Delegacia Especializada", endereco: "Av. Dom Pedro II, 853", contato: "197", funcionamento: "24 horas", lat: -7.1150, lng: -34.8631, icone: "🚨" },
+        { nome: "DEAM - João Pessoa (Sul)", tipo: "Delegacia Especializada", endereco: "Rua Valdemar Galdino", contato: "197", funcionamento: "24 horas", lat: -7.2500, lng: -34.8631, icone: "🚨" },
+        { nome: "CRM Ednalva Bezerra (JP)", tipo: "Acolhimento Psicológico", endereco: "Rua Afonso Campos, 111", contato: "0800 283 3883", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.1150, lng: -35.0000, icone: "🤝" },
+        { nome: "NUDEM - Defensoria (JP)", tipo: "Apoio Jurídico Especializado", endereco: "Parque Solon de Lucena", contato: "(83) 99992-6286", funcionamento: "Seg-Sex, 08h às 14h", lat: -6.9800, lng: -34.8631, icone: "⚖️" },
+        { nome: "Promotoria da Mulher (JP)", tipo: "Apoio Jurídico Especializado", endereco: "Rua 13 de Maio, 691", contato: "(83) 2107-6000", funcionamento: "Seg-Sex, 08h às 14h", lat: -7.1800, lng: -34.9500, icone: "⚖️" },
+        { nome: "Juizado da Mulher (JP)", tipo: "Justiça / Medidas Protetivas", endereco: "Fórum Criminal - Parque Solon de Lucena", contato: "(83) 3214-3997", funcionamento: "Seg-Sex, 12h às 18h", lat: -7.1200, lng: -34.8750, icone: "⚖️" },
+        { nome: "Maternidade Frei Damião (JP)", tipo: "Saúde / Referência", endereco: "Av. Alberto de Brito s/n", contato: "(83) 3215-6020", funcionamento: "Emergência 24h", lat: -7.0500, lng: -34.9500, icone: "🏥" },
+        { nome: "Hospital de Trauma (JP)", tipo: "Saúde / Referência", endereco: "Av. Ouseley, s/n - Pascoal Alaggio", contato: "(83) 3216-5700", funcionamento: "Emergência 24h", lat: -7.1400, lng: -34.8400, icone: "🏥" },
+        { nome: "DEAM - Santa Rita", tipo: "Delegacia Especializada", endereco: "Loteamento Jardim Mauritânia", contato: "197", funcionamento: "Seg-Sex", lat: -7.2200, lng: -34.9780, icone: "🚨" }, 
+        { nome: "CRAM – Santa Rita", tipo: "Acolhimento Psicológico", endereco: "Rua Juarez Távora, s/n - Centro", contato: "(83) 3229-3755", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.1500, lng: -34.9900, icone: "🤝" },
+        { nome: "DEAM - Bayeux", tipo: "Delegacia Especializada", endereco: "Av. Liberdade, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -7.0500, lng: -35.0800, icone: "🚨" }, 
+        { nome: "CRM Maria do Bom Parto (Bayeux)", tipo: "Acolhimento Psicológico", endereco: "Av. Liberdade, 3340", contato: "(83) 3237-4322", funcionamento: "Seg-Sex, 08h às 14h", lat: -7.1000, lng: -34.9300, icone: "🤝" },
+        { nome: "DEAM - Cabedelo", tipo: "Delegacia Especializada", endereco: "BR-230, Km 01", contato: "197", funcionamento: "Seg-Sex", lat: -6.8500, lng: -34.8330, icone: "🚨" },
+        { nome: "CRAM Maria de Fátima (Cabedelo)", tipo: "Acolhimento Psicológico", endereco: "Rua Solon de Lucena, s/n", contato: "(83) 3250-3164", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.9400, lng: -34.8400, icone: "🤝" },
+        { nome: "DEAM - Campina Grande", tipo: "Delegacia Especializada", endereco: "Rua Raimundo Nonato - Catolé", contato: "197", funcionamento: "24 horas", lat: -7.2244, lng: -35.8821, icone: "🚨" },
+        { nome: "CERM Fátima Lopes (CG)", tipo: "Acolhimento Psicológico", endereco: "Avenida Pedro I, 558", contato: "(83) 3310-6374", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.3600, lng: -35.8821, icone: "🤝" },
+        { nome: "CRAM Profa. Ana Luiza (CG)", tipo: "Acolhimento Psicológico", endereco: "Rua Capitão João Alves de Lira", contato: "(83) 3310-6000", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.0900, lng: -35.8821, icone: "🤝" },
+        { nome: "NUDEM - Defensoria (CG)", tipo: "Apoio Jurídico Especializado", endereco: "Rua Barão do Abiaí, 147", contato: "(83) 3310-9411", funcionamento: "Seg-Sex, 08h às 14h", lat: -7.2244, lng: -36.0200, icone: "⚖️" },
+        { nome: "Juizado da Mulher (CG)", tipo: "Justiça / Medidas Protetivas", endereco: "Complexo Judiciário, Cariri", contato: "(83) 3315-3300", funcionamento: "Seg-Sex, 12h às 18h", lat: -7.2400, lng: -35.8900, icone: "⚖️" },
+        { nome: "ISEA (Campina Grande)", tipo: "Saúde / Referência", endereco: "Rua Vila Nova da Rainha", contato: "(83) 3310-6085", funcionamento: "Emergência 24h", lat: -7.2244, lng: -35.7400, icone: "🏥" },
+        { nome: "Hospital de Trauma (CG)", tipo: "Saúde / Referência", endereco: "Av. Floriano Peixoto, s/n", contato: "(83) 3310-9200", funcionamento: "Emergência 24h", lat: -7.2300, lng: -35.9200, icone: "🏥" },
+        { nome: "DEAM - Queimadas", tipo: "Delegacia Especializada", endereco: "Rua Odilon Almeida", contato: "197", funcionamento: "Seg-Sex", lat: -7.3620, lng: -35.9000, icone: "🚨" },
+        { nome: "DEAM - Guarabira", tipo: "Delegacia Especializada", endereco: "R. Manoel F. do Nascimento", contato: "197", funcionamento: "Seg-Sex", lat: -6.8529, lng: -35.4883, icone: "🚨" },
+        { nome: "CRM Directa (Guarabira)", tipo: "Acolhimento Psicológico", endereco: "Rua Solon de Lucena, 32", contato: "(83) 3271-1152", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.8500, lng: -35.5300, icone: "🤝" },
+        { nome: "DEAM - Alagoa Grande", tipo: "Delegacia Especializada", endereco: "Rua Enéas Cavalcante, s/n", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.0300, lng: -35.6200, icone: "🚨" },
+        { nome: "DEAM - Solânea", tipo: "Delegacia Especializada", endereco: "Rua Pernambuco, s/n", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -6.7200, lng: -35.6600, icone: "🚨" },
+        { nome: "DEAM - Mamanguape", tipo: "Delegacia Especializada", endereco: "BR-101, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -6.8380, lng: -35.1250, icone: "🚨" },
+        { nome: "DEAM - Itabaiana", tipo: "Delegacia Especializada", endereco: "Rua Projetada, s/n", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.3200, lng: -35.3300, icone: "🚨" },
+        { nome: "DEAM - Patos", tipo: "Delegacia Especializada", endereco: "Rua Bossuet Wanderley, 337", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.0244, lng: -37.2801, icone: "🚨" },
+        { nome: "CRM Paula Francinete (Patos)", tipo: "Acolhimento Psicológico", endereco: "Rua Felizardo Leite, 52", contato: "(83) 3421-2605", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.1400, lng: -37.2801, icone: "🤝" },
+        { nome: "Mat. Dr. Peregrino Filho (Patos)", tipo: "Saúde / Referência", endereco: "Rua Dr. José Genuíno, s/n", contato: "(83) 3423-2288", funcionamento: "Emergência 24h", lat: -6.9100, lng: -37.2801, icone: "🏥" },
+        { nome: "DEAM - Cajazeiras", tipo: "Delegacia Especializada", endereco: "R. Romualdo Rolim, 636", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -6.8883, lng: -38.5583, icone: "🚨" },
+        { nome: "CRM Susane Alves (Cajazeiras)", tipo: "Acolhimento Psicológico", endereco: "Av. Presidente João Pessoa, 160", contato: "(83) 3531-4383", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.0000, lng: -38.5583, icone: "🤝" },
+        { nome: "Hospital Regional de Cajazeiras", tipo: "Saúde / Referência", endereco: "Rua Juvêncio Carneiro, s/n", contato: "(83) 3531-3561", funcionamento: "Emergência 24h", lat: -6.8900, lng: -38.5700, icone: "🏥" },
+        { nome: "DEAM - Sousa", tipo: "Delegacia Especializada", endereco: "R. Sardyr F. de Aragão", contato: "197", funcionamento: "Seg-Sex", lat: -6.7606, lng: -38.2259, icone: "🚨" },
+        { nome: "CRAM Márcia Roberta (Sousa)", tipo: "Acolhimento Psicológico", endereco: "Rua Getúlio Vargas, Centro", contato: "(83) 3521-1052", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.7600, lng: -38.2500, icone: "🤝" },
+        { nome: "DEAM - Catolé do Rocha", tipo: "Delegacia Especializada", endereco: "Av. Dep. Américo Maia", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -6.3400, lng: -37.7400, icone: "🚨" },
+        { nome: "CRAM – Pombal", tipo: "Acolhimento Psicológico", endereco: "Rua Cel. João Leite, Centro", contato: "(83) 3431-2244", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.7700, lng: -37.8000, icone: "🤝" },
+        { nome: "DEAM - Princesa Isabel", tipo: "Delegacia Especializada", endereco: "Rua Ministro José Américo", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.7400, lng: -37.9900, icone: "🚨" },
+        { nome: "DEAM - Monteiro", tipo: "Delegacia Especializada", endereco: "Av. Olímpio Maia, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -7.8890, lng: -37.1200, icone: "🚨" },
+        { nome: "DEAM - Picuí", tipo: "Delegacia Especializada", endereco: "Rua São Sebastião, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -6.5130, lng: -36.3470, icone: "🚨" }
+    ];
 
-    // ==========================================
-    // --- POLO CAMPINA GRANDE E REGIÃO ---
-    // ==========================================
-    { nome: "DEAM - Campina Grande", tipo: "Delegacia Especializada", endereco: "Rua Raimundo Nonato - Catolé", contato: "197", funcionamento: "24 horas", lat: -7.2244, lng: -35.8821, icone: "🚨" },
-    { nome: "CERM Fátima Lopes (CG)", tipo: "Acolhimento Psicológico", endereco: "Avenida Pedro I, 558", contato: "(83) 3310-6374", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.3600, lng: -35.8821, icone: "🤝" },
-    { nome: "CRAM Profa. Ana Luiza (CG)", tipo: "Acolhimento Psicológico", endereco: "Rua Capitão João Alves de Lira", contato: "(83) 3310-6000", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.0900, lng: -35.8821, icone: "🤝" },
-    { nome: "NUDEM - Defensoria (CG)", tipo: "Apoio Jurídico Especializado", endereco: "Rua Barão do Abiaí, 147", contato: "(83) 3310-9411", funcionamento: "Seg-Sex, 08h às 14h", lat: -7.2244, lng: -36.0200, icone: "⚖️" },
-    { nome: "Juizado da Mulher (CG)", tipo: "Justiça / Medidas Protetivas", endereco: "Complexo Judiciário, Cariri", contato: "(83) 3315-3300", funcionamento: "Seg-Sex, 12h às 18h", lat: -7.2400, lng: -35.8900, icone: "⚖️" },
-    { nome: "ISEA (Campina Grande)", tipo: "Saúde / Referência", endereco: "Rua Vila Nova da Rainha", contato: "(83) 3310-6085", funcionamento: "Emergência 24h", lat: -7.2244, lng: -35.7400, icone: "🏥" },
-    { nome: "Hospital de Trauma (CG)", tipo: "Saúde / Referência", endereco: "Av. Floriano Peixoto, s/n", contato: "(83) 3310-9200", funcionamento: "Emergência 24h", lat: -7.2300, lng: -35.9200, icone: "🏥" },
-    { nome: "DEAM - Queimadas", tipo: "Delegacia Especializada", endereco: "Rua Odilon Almeida", contato: "197", funcionamento: "Seg-Sex", lat: -7.3620, lng: -35.9000, icone: "🚨" },
-
-    // ==========================================
-    // --- POLO BREJO E VALE DO MAMANGUAPE ---
-    // ==========================================
-    { nome: "DEAM - Guarabira", tipo: "Delegacia Especializada", endereco: "R. Manoel F. do Nascimento", contato: "197", funcionamento: "Seg-Sex", lat: -6.8529, lng: -35.4883, icone: "🚨" },
-    { nome: "CRM Directa (Guarabira)", tipo: "Acolhimento Psicológico", endereco: "Rua Solon de Lucena, 32", contato: "(83) 3271-1152", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.8500, lng: -35.5300, icone: "🤝" },
-    { nome: "DEAM - Alagoa Grande", tipo: "Delegacia Especializada", endereco: "Rua Enéas Cavalcante, s/n", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.0300, lng: -35.6200, icone: "🚨" },
-    { nome: "DEAM - Solânea", tipo: "Delegacia Especializada", endereco: "Rua Pernambuco, s/n", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -6.7200, lng: -35.6600, icone: "🚨" },
-    { nome: "DEAM - Mamanguape", tipo: "Delegacia Especializada", endereco: "BR-101, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -6.8380, lng: -35.1250, icone: "🚨" },
-    { nome: "DEAM - Itabaiana", tipo: "Delegacia Especializada", endereco: "Rua Projetada, s/n", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.3200, lng: -35.3300, icone: "🚨" },
-
-    // ==========================================
-    // --- POLO PATOS, CARIRI E SERTÃO ---
-    // ==========================================
-    { nome: "DEAM - Patos", tipo: "Delegacia Especializada", endereco: "Rua Bossuet Wanderley, 337", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.0244, lng: -37.2801, icone: "🚨" },
-    { nome: "CRM Paula Francinete (Patos)", tipo: "Acolhimento Psicológico", endereco: "Rua Felizardo Leite, 52", contato: "(83) 3421-2605", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.1400, lng: -37.2801, icone: "🤝" },
-    { nome: "Mat. Dr. Peregrino Filho (Patos)", tipo: "Saúde / Referência", endereco: "Rua Dr. José Genuíno, s/n", contato: "(83) 3423-2288", funcionamento: "Emergência 24h", lat: -6.9100, lng: -37.2801, icone: "🏥" },
-    { nome: "DEAM - Cajazeiras", tipo: "Delegacia Especializada", endereco: "R. Romualdo Rolim, 636", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -6.8883, lng: -38.5583, icone: "🚨" },
-    { nome: "CRM Susane Alves (Cajazeiras)", tipo: "Acolhimento Psicológico", endereco: "Av. Presidente João Pessoa, 160", contato: "(83) 3531-4383", funcionamento: "Seg-Sex, 08h às 17h", lat: -7.0000, lng: -38.5583, icone: "🤝" },
-    { nome: "Hospital Regional de Cajazeiras", tipo: "Saúde / Referência", endereco: "Rua Juvêncio Carneiro, s/n", contato: "(83) 3531-3561", funcionamento: "Emergência 24h", lat: -6.8900, lng: -38.5700, icone: "🏥" },
-    { nome: "DEAM - Sousa", tipo: "Delegacia Especializada", endereco: "R. Sardyr F. de Aragão", contato: "197", funcionamento: "Seg-Sex", lat: -6.7606, lng: -38.2259, icone: "🚨" },
-    { nome: "CRAM Márcia Roberta (Sousa)", tipo: "Acolhimento Psicológico", endereco: "Rua Getúlio Vargas, Centro", contato: "(83) 3521-1052", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.7600, lng: -38.2500, icone: "🤝" },
-    { nome: "DEAM - Catolé do Rocha", tipo: "Delegacia Especializada", endereco: "Av. Dep. Américo Maia", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -6.3400, lng: -37.7400, icone: "🚨" },
-    { nome: "CRAM – Pombal", tipo: "Acolhimento Psicológico", endereco: "Rua Cel. João Leite, Centro", contato: "(83) 3431-2244", funcionamento: "Seg-Sex, 08h às 17h", lat: -6.7700, lng: -37.8000, icone: "🤝" },
-    { nome: "DEAM - Princesa Isabel", tipo: "Delegacia Especializada", endereco: "Rua Ministro José Américo", contato: "197", funcionamento: "Seg-Sex, 08h às 18h", lat: -7.7400, lng: -37.9900, icone: "🚨" },
-    { nome: "DEAM - Monteiro", tipo: "Delegacia Especializada", endereco: "Av. Olímpio Maia, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -7.8890, lng: -37.1200, icone: "🚨" },
-    { nome: "DEAM - Picuí", tipo: "Delegacia Especializada", endereco: "Rua São Sebastião, s/n", contato: "197", funcionamento: "Seg-Sex", lat: -6.5130, lng: -36.3470, icone: "🚨" }
-];
-
-    // Coloca os ícones dentro do grupo g
     g.selectAll("text.icone-mapa")
         .data(pontosApoio)
         .enter()
@@ -508,18 +496,14 @@ const pontosApoio = [
             abrirPonto(d); 
         });
 
-    // ===============================================
-    // IMPLEMENTAÇÃO DO ZOOM E PAN (Arrastar)
-    // ===============================================
     const zoom = d3.zoom()
-        .scaleExtent([1, 8]) // Limites de zoom: de 1x (normal) a 8x (máximo)
+        .scaleExtent([1, 8]) 
         .on("zoom", (event) => {
-            g.attr("transform", event.transform); // Aplica o zoom/arrastar no mapa
+            g.attr("transform", event.transform); 
         });
 
     svg.call(zoom);
 
-    // Controles físicos na tela (+ e -)
     const zoomControls = d3.select("#container-mapa-apoio")
         .append("div")
         .style("position", "absolute")
@@ -529,19 +513,16 @@ const pontosApoio = [
         .style("flex-direction", "column")
         .style("gap", "8px");
 
-    // Botão de Maximizar
     zoomControls.append("button")
         .text("+")
         .attr("class", "btn-zoom")
         .on("click", () => { svg.transition().duration(300).call(zoom.scaleBy, 1.5); });
 
-    // Botão de Minimizar
     zoomControls.append("button")
         .text("-")
         .attr("class", "btn-zoom")
         .on("click", () => { svg.transition().duration(300).call(zoom.scaleBy, 0.7); });
 
-    // Botão de Reset
     zoomControls.append("button")
         .text("↺")
         .attr("title", "Resetar Mapa")
@@ -549,9 +530,6 @@ const pontosApoio = [
         .on("click", () => { svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity); });
 }
 
-// =========================================================
-// INTERATIVIDADE DOS MODAIS (MAPA E NOTÍCIAS)
-// =========================================================
 const dadosNoticias = {
     'noticia-1': {
         titulo: "Sinal Vermelho Contra a Violência",
@@ -570,7 +548,7 @@ function abrirNoticia(id) {
     const corpo = document.getElementById('modal-dinamico-corpo');
     const info = dadosNoticias[id];
 
-    if (info) {
+    if (info && modal && corpo) {
         corpo.innerHTML = `
             <h3 style="font-size: 1.6rem; color: #E91E63; margin-bottom: 5px;">${info.titulo}</h3>
             <h5 style="font-size: 1rem; color: #4A148C; opacity: 0.8; margin-bottom: 20px;">${info.subtitulo}</h5>
@@ -581,10 +559,10 @@ function abrirNoticia(id) {
 }
 
 function fecharNoticia() {
-    document.getElementById('noticia-modal').style.display = "none";
+    const modal = document.getElementById('noticia-modal');
+    if (modal) modal.style.display = "none";
 }
 
-// Função para abrir o Ponto Clicado no Mapa
 function abrirPonto(info) {
     const modal = document.getElementById('ponto-modal');
     const corpo = document.getElementById('modal-ponto-corpo');
@@ -609,10 +587,10 @@ function abrirPonto(info) {
 }
 
 function fecharPonto() {
-    document.getElementById('ponto-modal').style.display = "none";
+    const modal = document.getElementById('ponto-modal');
+    if (modal) modal.style.display = "none";
 }
 
-// Fechar os modais clicando no fundo escuro
 window.onclick = function(event) {
     const modalNoticia = document.getElementById('noticia-modal');
     const modalPonto = document.getElementById('ponto-modal');
